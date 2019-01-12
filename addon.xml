@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.stream-me" name="Stream.Me" version="1.0.0" provider-name="winsomehax">
+    <requires>
+        <import addon="xbmc.python" version="2.25.0"/>
+        <import addon="script.module.routing" version="0.2.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Viewing streams from Stream.me</summary>
+        <description lang="en_GB">View live and archived streams from stream.me. Create a stream.me account. Enter your stream.me username (not the display name). Enjoy. Also: subscribe to MisterMetokur, The RalphRetort and SPCC. All excellent.</description>
+        <language></language>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum></forum>
+        <website></website>
+        <email>winsomehax@gmail.com</email>
+        <source></source>
+        <news></news>
+        <disclaimer>It's yours. If you break it, you can keep the pieces.</disclaimer>
+        <assets>
+            <icon>resources/icon.png</icon>
+            <fanart>resources/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
