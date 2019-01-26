@@ -1,186 +1,162 @@
 from urllib2 import urlopen, HTTPError
 from json import loads
+import __future__
+
 import kodifuncs as kf
 
 
-class streamSDM:
-
+class SDM_Stream:
     live = False
     title = ""
     url = ""
     username = ""
-    displayName = ""
+    display_name = ""
     lastStarted = ""
     thumbnail = ""
     tags = []
     topics = []
-    whenCreated = ""
+    when_created = ""
     duration = ""
-    jsonstore = ""
+    json_store = ""
 
     def __init__(self, title, url):
         self.title = title
         self.url = url
 
 
-class userSDM:
-
+class SDM_User:
     userSlug = ""
-    displayName = ""
+    display_name = ""
     description = ""
 
     def __init__(self, user, name, desc):
         self.userSlug = user
-        self.displayName = name
+        self.display_name = name
         self.description = desc
 
 
 # get a list of all stream.me live streams
-class allStreams:
+class SDM_AllStreams:
+    # live_streams: List[StreamSDM] = []
 
-    liveStreams = []
+    def __init__(self):
+        pass
 
-    def _processStreams(self, url):
+    def _process_streams(self, url):
         streams = []
+
         response = urlopen(url)
         j = loads(response.read())
         for s in j['_embedded']['streams']:
-            if (s['_links'].has_key('hlsmp4')):
-                stream = streamSDM(s['title'], s['_links']['hlsmp4']['href'])
-                stream.Live, stream.username, stream.displayName, stream.lastStarted, stream.thumbnail = True, s[
+            if 'hlsmp4' in s['_links']:
+                stream = SDM_Stream(s['title'], s['_links']['hlsmp4']['href'])
+                stream.Live, stream.username, stream.display_name, stream.lastStarted, stream.thumbnail = True, s[
                     'username'], s['displayName'], s['lastStarted'], s['_links']['thumbnail']['href']
                 for t in s['topics']:
                     stream.topics.append(t['slug'])
                 for t in s['tags']:
                     stream.topics.append(t['slug'])
-                stream.jsonstore = j  # may as well stick it in there
+                stream.json_store = j  # may as well stick it in there
                 streams.append(stream)
             else:
-                print "skip no hlsmp4"
+                pass
+                # skip no hlsmp4
 
-        # the call will only return a max 120 at a time (according to stream.me barebones dev docs), but if the json returned has a _links.next, there's more by following the 'next' link.
-        if j['_links'].has_key('next'):
-            next = j['_links']['next']
-            streams.extend(self._processStreams(next))
+        # the call will only return a max 120 at a time (according to stream.me barebones dev docs),
+        # but if the json returned has a _links.next, there's more by following the 'next' link.
+        if 'next' in j['_links']:
+            next_link = j['_links']['next']
+            streams.extend(self._process_streams(next_link))
 
         return streams
 
-    def refresh(self):
-        self.liveStreams = self._processStreams(
+    def get_all_streams(self):
+        return self._process_streams(
             'https://www.stream.me/api-live/v2/streams?limit=120')
 
 
 # get the publicly available details for my stream.me user (as set in the kodi settings for this plugin)
-class myAccount():
+# also, contains methods to get live streams for the user and the archives
+class SDM_Account:
 
-    following = []
     username = ""
 
-    def __init__(self):
-        self.username = self.getUsername()
-        if self.username == "":
-            kf.errornotice()
-            self.username = 'winsomehax'  # replace empty setting with a useful default
+    def __init__(self, user):
+        self.username = user
 
-        self.refreshFollowing()
-
-    def getUsername(self):
-        return (kf.kodi_getsettingsuser())
-
-    # recursive function to get the json detailing followers and return a list of user objects. Not to be called directly from outside
-    def _loadFollowing(self, url):
+    # recursive function to get the json detailing followers and return a list of user objects.
+    # Not to be called directly from outside
+    def _load_following(self, url):
         followers = []
         response = urlopen(url)
         j = loads(response.read())
         for u in j["_embedded"]["users"]:
-            user = userSDM(u['slug'], u['username'], u['description'])
+            user = SDM_User(u['slug'], u['username'], u['description'])
             followers.append(user)
 
-        # If the json returned has a _links.next, there's more by following the 'next' link - recursive call. Pass up the list joined together
-        if j.has_key('_links'):
-            if j['_links'].has_key('next'):
-                followers.extend(self._loadFollowing(j['_links']['next']))
+        # If the json returned has a _links.next, there's more by following the 'next' link - recursive call.
+        # Pass up the list joined together
+        if '_links' in j:
+            if 'next' in j['_links']:
+                followers.extend(self._load_following(j['_links']['next']))
 
-        return (followers)
+        return followers
 
-    def refreshFollowing(self):
-        self.following = self._loadFollowing(
-            "https://www.stream.me/api-user/v1/"+self.username+"/following?limit=40")
+    def get_following(self):
+        return self._load_following(
+            "https://www.stream.me/api-user/v1/" + self.username + "/following?limit=40")
 
-    def __iter__(self):
-        for f in self.following:
-            yield f
-
-# get the archived streams for a particular user
-class userArchive:
-
-    streams = []
-    user = ""
-
-    def __init__(self, user):
-        self.user = user
-
-    def refresh(self):
-        self.streams = []
+    def get_vod_archive(self):
+        streams = []
         response = urlopen('https://www.stream.me/api-vod/v2/' +
-                           self.user+'/archives')
+                           self.username + '/archives')
         j = loads(response.read())
         vods = j['_embedded']['vod']
         for vod in vods:
             title = vod['title']
             url = vod['_links']['hlsmp4']['href']
-            s = streamSDM(title, url)
-            s.Live, s.username, s.displayName, s.thumbnail, s.duration, s.whenCreated = True, vod['username'], vod[
-                'displayName'], vod['_links']['thumbnail']['href'], vod['duration'], vod['whenCreated']
-            self.streams.append(s)
+            s = SDM_Stream(title, url)
+            s.Live, s.username, s.display_name, s.thumbnail, s.duration, s.when_created = \
+                True, vod['username'], vod['displayName'], vod['_links']['thumbnail']['href'], \
+                vod['duration'], vod['whenCreated']
+            streams.append(s)
 
+        return streams
 
-# get the streams that are live for a particular user
-class userLive:
+    def get_live(self):
 
-    streams = []
-    user = ""
+        streams = []
 
-    def __init__(self, user):
-        self.user = user
-
-    def refresh(self):
-        self.streams = []
         try:
             response = urlopen(
-                'https://www.stream.me/api-user/v1/'+self.user+'/channel/')
+                'https://www.stream.me/api-user/v1/' + self.username + '/channel/')
 
         except HTTPError:
-            return False
+            return []
 
         j = loads(response.read())
         for s in j['_embedded']['streams']:
             try:
-                title = s['displayName'] + " - "+s['title']
-                t = streamSDM(title, s["_links"]["hlsmp4"]["href"])
-                t.Live, t.username, t.displayName, t.thumbnail, t.lastStarted = True, s[
-                    'username'], s['displayName'], s['_links']['thumbnail']['href'], s['lastStarted']
-                self.streams.append(t)
+                title = s['displayName'] + " - " + s['title']
+                t = SDM_Stream(title, s["_links"]["hlsmp4"]["href"])
+                t.Live, t.username, t.display_name, t.thumbnail, t.lastStarted = \
+                    True, s['username'], s['displayName'], s['_links']['thumbnail']['href'], \
+                    s['lastStarted']
+                streams.append(t)
 
             except KeyError:
-                # kodidialogs.errornotice()
                 # some streams appear to lack hlsmp4? dunno.. Ignore them. Can't be played anyway.
                 pass
 
-        return True
+        return streams
 
 
-# get the streams that are live for a list of users
-class usersLive:
+# Special case - subclass. Doesn't need you to supply user. It gets it from the settings as it's
+# YOUR stream.me user
+class SDM_MyAccount(SDM_Account):
 
-    streams = []
-    users = []
-
-    def __init__(self, users):
-        self.users = users
-
-    def refresh(self):
-        for u in self.users:
-            r = userLive(u.userSlug)
-            r.refresh()
-            self.streams.extend(r)
+    def __init__(self):
+        self.username = kf.kodi_get_settings_user()
+        if self.username == "":
+            self.username = 'winsomehax'  # replace empty setting with a useful default
+        SDM_Account.__init__(self, self.username)

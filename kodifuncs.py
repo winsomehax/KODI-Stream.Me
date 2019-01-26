@@ -4,49 +4,51 @@ from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
 from xbmcgui import ListItem
 from routing import Plugin
 
-def errornotice(err):
+
+def error_notice(err):
     __addon__ = xbmcaddon.Addon()
     __addonname__ = __addon__.getAddonInfo('name')
 
     xbmcgui.Dialog().ok(__addonname__, err, "", "")
 
-def kodi_getsettingsuser():
-    return (xbmcaddon.Addon().getSetting("user"))
+
+def kodi_get_settings_user():
+    return xbmcaddon.Addon().getSetting("user")
 
 
-class kodiPlugin():
-    handle=0
+class KodiPlugin:
+    handle = 0
 
     def __init__(self):
-        self.handle=Plugin().handle
+        self.handle = Plugin().handle
 
-    def startVidFolder(self):
+    def start_vid_folder(self):
         setContent(self.handle, "videos")
 
-    def folderDone(self):
+    def folder_done(self):
         endOfDirectory(self.handle)
 
-    def makeFolder(self,foldername, url, iconname):
-        li = ListItem(foldername, iconImage=iconname)
+    def make_folder(self, folder_name, url, icon_name):
+        li = ListItem(folder_name, iconImage=icon_name)
         li.setProperty('IsPlayable', 'False')
         addDirectoryItem(self.handle, url=url, listitem=li, isFolder=True)
 
-    def makeSelectable(self,name,url):
+    def make_selectable(self, name, url):
         li = ListItem(name, iconImage='DefaultUser.png')
         li.setProperty('IsPlayable', 'False')
-        li.setInfo("video", {'mediatype': 'video'})   # needed to make it selectable?
+        li.setInfo("video", {'mediatype': 'video'})  # needed to make it selectable?
         addDirectoryItem(self.handle, url=url, listitem=li)
 
-    def makePlayable(self,playablename, thumbnail, duration, url):
+    def make_playable(self, playablename, thumbnail, duration, url):
         li = ListItem(playablename, iconImage='DefaultTVShows.png')
         li.setProperty('IsPlayable', 'True')
         li.setInfo("video", {'mediatype': 'video', 'duration': duration})
-        li.addStreamInfo('video', { 'duration': duration})
+        li.addStreamInfo('video', {'duration': duration})
         li.setArt({'icon': thumbnail})
         li.setArt({'poster': thumbnail})
         li.setArt({'thumb': thumbnail})
         li.setArt({'banner': thumbnail})
         addDirectoryItem(self.handle, url=url, listitem=li)
 
-    def openSettings(self):
-        xbmcaddon.Addon().openSettings()
+    def open_settings(self):
+        xbmcaddon.Addon().open_settings()
