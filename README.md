@@ -1,3 +1,5 @@
+# Defunct. Stream.Me closed down repo left for info purposes only
+
 # KODI-Stream.Me
 
 Welcome to my Stream.Me addon for KODI
